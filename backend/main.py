@@ -30,9 +30,22 @@ MODEL_PATH = os.getenv("MODEL_PATH", "models/gesture_recognizer.task")
 recognizer: Optional[vision.GestureRecognizer] = None
 
 # Loads the gesture recognizer model at application startup. This ensures that the model is ready to use when the first prediction request comes in, reducing latency for the first request. 
+import urllib.request
+
 @app.on_event("startup")
 def load_model():
     global recognizer
+    
+    # Download model if not present
+    if not os.path.exists("models"):
+        os.makedirs("models")
+    
+    if not os.path.exists(MODEL_PATH):
+        print("Downloading gesture recognizer model...")
+        url = "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task"
+        urllib.request.urlretrieve(url, MODEL_PATH)
+        print("Model downloaded successfully")
+    
     options = vision.GestureRecognizerOptions(
         base_options=mp.tasks.BaseOptions(model_asset_path=MODEL_PATH),
         running_mode=vision.RunningMode.IMAGE,
