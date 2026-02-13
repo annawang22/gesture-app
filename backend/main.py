@@ -2,16 +2,20 @@ import io
 import os
 from typing import Optional
 
+# converts images into array format MediaPipe can work with
 import numpy as np
+# Pillow is used to read the uploaded image file and convert it into a format that MediaPipe can process
 from PIL import Image as PILImage
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+# CORSMiddleware allows frontend from another origin to call backend
 
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 
 app = FastAPI(title="Gesture Label API")
 
+# sets up CORS (cross origin resource sharing) to allow frontend to call backend from a different origin
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "*")
 app.add_middleware(
     CORSMiddleware,
@@ -21,10 +25,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Load the gesture recognizer model at startup
 MODEL_PATH = os.getenv("MODEL_PATH", "models/gesture_recognizer.task")
 recognizer: Optional[vision.GestureRecognizer] = None
 
-
+# Loads the gesture recognizer model at application startup. This ensures that the model is ready to use when the first prediction request comes in, reducing latency for the first request. 
 @app.on_event("startup")
 def load_model():
     global recognizer
@@ -58,5 +63,6 @@ async def predict(image: UploadFile = File(...)):
     if not result.gestures or not result.gestures[0]:
         return {"label": None, "score": None, "message": "No hand/gesture detected"}
 
+    # Get the top gesture prediction for the first hand detected
     top = result.gestures[0][0]
     return {"label": top.category_name, "score": float(top.score)}

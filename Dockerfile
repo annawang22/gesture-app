@@ -7,15 +7,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# ✅ actually copy requirements into the container
 COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
+# ✅ actually copy your backend code into the container
 COPY backend /app/backend
 
+# Download the MediaPipe model into the container
 RUN mkdir -p /app/backend/models && \
     curl -L -o /app/backend/models/gesture_recognizer.task \
     https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task
 
 ENV MODEL_PATH=/app/backend/models/gesture_recognizer.task
 
+# Render provides $PORT — you must bind to it
 CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT}"]
+
