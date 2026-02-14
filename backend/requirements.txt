@@ -1,6 +1,0 @@
-fastapi
-uvicorn[standard]
-mediapipe
-pillow
-numpy
-python-multipart
