@@ -111,6 +111,21 @@ def decode_image_from_request(file_storage):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     return np.array(img)
 
+#downscale
+def downscale_rgb(rgb, max_dim=512):
+    h, w = rgb.shape[:2]
+    m = max(h, w)
+    if m <= max_dim:
+        return rgb
+    scale = max_dim / m
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    # Use OpenCV if you still have it, otherwise Pillow/numpy methods.
+    # If you're using Pillow decode already, easiest is:
+    img = Image.fromarray(rgb)
+    img = img.resize((new_w, new_h))
+    return np.array(img)
+
 
 def recognizer_top_label(rgb_image):
     """
@@ -121,10 +136,14 @@ def recognizer_top_label(rgb_image):
       result.gestures -> list (per hand) of lists of Categories
       each Category has category_name + score
     """
+
+
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
 
     # IMAGE mode uses recognize(...) and blocks until done. :contentReference[oaicite:4]{index=4}
+    t0 = time.time()
     result = recognizer.recognize(mp_image)
+    print("recognize() seconds:", time.time() - t0, flush=True)
 
     # Defensive parsing with lots of checks for "no hands" cases:
     if result is None or result.gestures is None or len(result.gestures) == 0:
@@ -166,6 +185,9 @@ def predict():
             return jsonify({"error": "No file selected."}), 400
 
         rgb = decode_image_from_request(file)
+        
+        rgb = downscale_rgb(rgb, max_dim=512)
+
         label, score = recognizer_top_label(rgb)
 
         return jsonify({
