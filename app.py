@@ -43,6 +43,15 @@ def handle_exception(e):
     }), 500
 
 
+
+@app.get("/version")
+def version():
+    return {
+        "commit_hint": "v1-debug-2026-02-16-1334",
+        "python": os.sys.version,
+    }, 200
+
+
 # ----------------------------
 # MediaPipe recognizer setup
 # ----------------------------
