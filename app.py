@@ -15,8 +15,10 @@ import os
 import time
 import traceback
 
+from PIL import Image
+import io
 import numpy as np
-import cv2
+
 from flask import Flask, request, jsonify
 
 import mediapipe as mp
@@ -106,13 +108,8 @@ def decode_image_from_request(file_storage):
     if not image_bytes:
         raise ValueError("Uploaded file is empty.")
 
-    npbuf = np.frombuffer(image_bytes, dtype=np.uint8)
-    bgr = cv2.imdecode(npbuf, cv2.IMREAD_COLOR)
-    if bgr is None:
-        raise ValueError("Could not decode image. Is it a valid JPG/PNG?")
-
-    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-    return rgb
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    return np.array(img)
 
 
 def recognizer_top_label(rgb_image):

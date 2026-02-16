@@ -5,5 +5,5 @@ gunicorn==22.0.0
 mediapipe==0.10.32
 
 # Image decoding
-opencv-python-headless==4.10.0.84
-numpy==2.0.2
+pillow==12.1.1
+numpy==1.26.4
