@@ -167,9 +167,10 @@ def recognizer_top_label(rgb_image):
 def healthz():
     return jsonify({"ok": True, "time": time.time()}), 200
 
-print("HIT /predict", flush=True)
+
 @app.post("/predict")
 def predict():
+    print("HIT /predict", flush=True)
     """
     Expects: multipart/form-data with a file field named "image".
     Returns: JSON { label, score }
@@ -185,8 +186,8 @@ def predict():
             return jsonify({"error": "No file selected."}), 400
 
         rgb = decode_image_from_request(file)
-        
-        rgb = downscale_rgb(rgb, max_dim=512)
+
+        rgb = downscale_rgb(rgb, max_dim=256)
 
         label, score = recognizer_top_label(rgb)
 
