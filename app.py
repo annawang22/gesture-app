@@ -34,6 +34,14 @@ MIN_TRACKING_CONF = float(os.environ.get("MIN_TRACKING_CONF", "0.5"))
 
 app = Flask(__name__)
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    traceback.print_exc()  # shows full traceback in Render logs
+    return jsonify({
+        "type": type(e).__name__,
+        "error": str(e),
+    }), 500
+
 
 # ----------------------------
 # MediaPipe recognizer setup
