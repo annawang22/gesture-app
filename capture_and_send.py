@@ -10,7 +10,7 @@ Usage:
 
 import argparse
 import tempfile
-import cv2
+# import cv2
 import requests
 
 
