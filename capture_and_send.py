@@ -19,13 +19,13 @@ def main():
     parser.add_argument("--url", required=True, help="Full /predict URL")
     args = parser.parse_args()
 
-    health_url = args.url.replace("/predict", "/healthz")
-    print("Warming up:", health_url)
-    try:
-        r = requests.get(health_url, timeout=60)
-        print("Warmup status:", r.status_code, r.text[:200])
-    except Exception as e:
-        print("Warmup error:", e)
+    # health_url = args.url.replace("/predict", "/healthz")
+    # print("Warming up:", health_url)
+    # try:
+    #     r = requests.get(health_url, timeout=60)
+    #     print("Warmup status:", r.status_code, r.text[:200])
+    # except Exception as e:
+    #     print("Warmup error:", e)
 
 
     cap = cv2.VideoCapture(0)
