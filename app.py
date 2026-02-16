@@ -148,7 +148,7 @@ def recognizer_top_label(rgb_image):
 def healthz():
     return jsonify({"ok": True, "time": time.time()}), 200
 
-
+print("HIT /predict", flush=True)
 @app.post("/predict")
 def predict():
     """
