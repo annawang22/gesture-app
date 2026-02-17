@@ -135,7 +135,7 @@ export MIN_HAND_DETECTION_CONF="0.6"
 ### Run the backend
 ```bash
 source .venv/bin/activate
-python app.py
+python3 app.py
 ```
 
 Expected output includes something like:
@@ -161,7 +161,7 @@ In a **second terminal** (leave the backend running in the first terminal):
 
 ```bash
 source .venv/bin/activate
-python capture_and_send.py --url http://127.0.0.1:5000/predict
+python3 capture_and_send.py --url http://127.0.0.1:5000/predict
 ```
 
 - Press **`c`** to capture and send a frame
@@ -193,6 +193,9 @@ curl -i -X POST "https://YOUR-SERVICE.onrender.com/predict" -F "image=@/FULL/PAT
 This project does **not** use authentication (no API keys, tokens, or user accounts).  
 There are **no secrets stored in the client script**.
 
-If you later add secrets (API keys, etc.), the recommended pattern is:
-- store secrets as **environment variables** on the backend (Render → Environment)
-- **never** hardcode secrets in `capture_and_send.py` or commit them to GitHub
+---
+
+## Attribution / Use of AI Tools
+The majority of the code in this repository was generated with the assistance of ChatGPT Pro (Feb. 2026).  
+I reviewed the generated code, integrated it into this project, tested it locally and on Render, and made edits as needed.
+
