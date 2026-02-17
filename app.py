@@ -23,6 +23,8 @@ from flask import Flask, request, jsonify
 
 import mediapipe as mp
 
+from werkzeug.exceptions import HTTPException
+
 
 # ----------------------------
 # Configuration
@@ -36,13 +38,21 @@ MIN_TRACKING_CONF = float(os.environ.get("MIN_TRACKING_CONF", "0.5"))
 
 app = Flask(__name__)
 
+@app.get("/")
+def home():
+    return "OK", 200
+
 @app.errorhandler(Exception)
-def handle_exception(e):
-    traceback.print_exc()  # shows full traceback in Render logs
-    return jsonify({
-        "type": type(e).__name__,
-        "error": str(e),
-    }), 500
+def handle_any_exception(e):
+    """
+    Important: don't convert normal HTTP errors (like 404 Not Found) into 500s.
+    Only return 500 JSON for real unexpected exceptions.
+    """
+    if isinstance(e, HTTPException):
+        return e  # keep 404/405/etc as-is
+
+    traceback.print_exc()
+    return jsonify({"type": type(e).__name__, "error": str(e)}), 500
 
 
 
