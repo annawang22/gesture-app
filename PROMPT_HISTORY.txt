@@ -1,0 +1,25 @@
+AI Models Used: ChatGPT Pro (Feb. 2026)
+
+Key Prompts:
+"could you write a python script that uses mediapipe (https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer/index#models) to capture an image of a gesture and sends back a label using flask and render.com? prioritize simplicity in code and provide me lots of comments so it's easy to debug."
+
+variations of: "this is what my terminal/render logs are returning: '...' is this what i'm supposed to see? if not, how do i fix this? and what should i expect to see?"
+
+for example,
+"i got Status: 500
+Response: <html>
+  <head>
+    <title>Internal Server Error</title>
+  </head>
+  <body>
+    <h1><p>Internal Server Error</p></h1>
+    
+  </body>
+</html>again what do i do?"
+
+"i got the same error again: HTTP/2 500 date: Mon, 16 Feb 2026 13:34:07 GMT content-type: text/html cf-ray: 9ced67486aed54bb-IAD rndr-id: 718e33d8-3e70-4561 vary: Accept-Encoding x-render-origin-server: Render cf-cache-status: DYNAMIC server: cloudflare alt-svc: h3=":443"; ma=86400 <html> <head> <title>Internal Server Error</title> </head> <body> <h1><p>Internal Server Error</p></h1> </body> </html>"
+
+
+"im confused on why i keep getting the "Perhaps out of memory" when on my actual free plan, it doesn't look like i'm at my max?"
+
+"i have implemented i think everything you said. this is what i currently have. is there anything else that i can do beside purchasing more memory? if i do purchase more memory how would i do it?"
