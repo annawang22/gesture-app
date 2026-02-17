@@ -24,6 +24,7 @@ from flask import Flask, request, jsonify
 import mediapipe as mp
 
 from werkzeug.exceptions import HTTPException
+import concurrent.futures
 
 
 # ----------------------------
@@ -152,10 +153,17 @@ def recognizer_top_label(rgb_image):
 
     print("calling recognizer.recognize()", flush=True)
 
-    # IMAGE mode uses recognize(...) and blocks until done. :contentReference[oaicite:4]{index=4}
+    # Run recognize() in a thread so we can enforce a timeout (prevents hanging forever on Render).
     t0 = time.time()
-    result = recognizer.recognize(mp_image)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        fut = ex.submit(recognizer.recognize, mp_image)
+        try:
+            result = fut.result(timeout=15)  # seconds
+        except concurrent.futures.TimeoutError:
+            raise TimeoutError("recognizer.recognize() timed out after 15s on Render")
+
     print("recognize() seconds:", time.time() - t0, flush=True)
+
 
     # Defensive parsing with lots of checks for "no hands" cases:
     if result is None or result.gestures is None or len(result.gestures) == 0:
