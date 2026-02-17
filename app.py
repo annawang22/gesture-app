@@ -100,9 +100,9 @@ recognizer = build_recognizer()
 def decode_image_from_request(file_storage):
     """
     Convert an uploaded image (werkzeug FileStorage) into an RGB numpy array.
-    - Reads bytes
-    - cv2.imdecode -> BGR
-    - convert to RGB (MediaPipe expects SRGB)
+    - Reads bytes from the request
+    - Uses Pillow to decode
+    - Returns RGB numpy array (MediaPipe expects SRGB/RGB)
     """
     image_bytes = file_storage.read()
     if not image_bytes:
@@ -140,6 +140,8 @@ def recognizer_top_label(rgb_image):
 
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
 
+    print("calling recognizer.recognize()", flush=True)
+
     # IMAGE mode uses recognize(...) and blocks until done. :contentReference[oaicite:4]{index=4}
     t0 = time.time()
     result = recognizer.recognize(mp_image)
@@ -170,39 +172,55 @@ def healthz():
 
 @app.post("/predict")
 def predict():
-    print("HIT /predict", flush=True)
     """
     Expects: multipart/form-data with a file field named "image".
     Returns: JSON { label, score }
+
+    Debugging goal:
+    - Print timestamps after each major step so we can see where it hangs on Render.
     """
+    print("HIT /predict", flush=True)
+    t0 = time.time()  # start timer for this request
+
     try:
+        # 1) Validate request format
         if "image" not in request.files:
+            print("missing 'image' field", flush=True)
             return jsonify({
                 "error": "Missing file field 'image'. Send multipart/form-data with image=@file.jpg"
             }), 400
 
         file = request.files["image"]
         if not file or file.filename == "":
+            print("empty filename / no file selected", flush=True)
             return jsonify({"error": "No file selected."}), 400
 
+        print(f"got file: name={file.filename}", "elapsed:", round(time.time() - t0, 3), flush=True)
+
+        # 2) Decode bytes -> RGB numpy array
         rgb = decode_image_from_request(file)
+        print("decoded rgb shape:", getattr(rgb, "shape", None),
+              "elapsed:", round(time.time() - t0, 3), flush=True)
 
+        # 3) Downscale to reduce memory/time
         rgb = downscale_rgb(rgb, max_dim=256)
+        print("downscaled shape:", getattr(rgb, "shape", None),
+              "elapsed:", round(time.time() - t0, 3), flush=True)
 
+        # 4) Run MediaPipe recognizer
         label, score = recognizer_top_label(rgb)
+        print("recognizer done",
+              "elapsed:", round(time.time() - t0, 3), flush=True)
 
-        return jsonify({
-            "label": label,
-            "score": score,
-        }), 200
+        return jsonify({"label": label, "score": score}), 200
 
     except Exception as e:
-        # Print full traceback to logs (Render logs will show this)
         traceback.print_exc()
         return jsonify({
             "error": str(e),
             "traceback": traceback.format_exc(),
         }), 500
+
 
 
 # Local dev entrypoint (Render will use gunicorn instead)
