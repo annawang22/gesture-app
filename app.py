@@ -146,44 +146,24 @@ def downscale_rgb(rgb, max_dim=512):
 
 
 def recognizer_top_label(rgb_image):
-    """
-    Run gesture recognition and return (label, score).
-    If nothing is detected, return ("None", 0.0).
-
-    Result structure (high level):
-      result.gestures -> list (per hand) of lists of Categories
-      each Category has category_name + score
-    """
-
-
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-
     print("calling recognizer.recognize()", flush=True)
-
-    # Run recognize() in a thread so we can enforce a timeout (prevents hanging forever on Render).
     t0 = time.time()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-        fut = ex.submit(recognizer.recognize, mp_image)
-        try:
-            result = fut.result(timeout=15)  # seconds
-        except concurrent.futures.TimeoutError:
-            raise TimeoutError("recognizer.recognize() timed out after 15s on Render")
-
+    
+    result = recognizer.recognize(mp_image)  # Call directly, no thread pool
+    
     print("recognize() seconds:", time.time() - t0, flush=True)
 
-
-    # Defensive parsing with lots of checks for "no hands" cases:
     if result is None or result.gestures is None or len(result.gestures) == 0:
         return "None", 0.0
 
     first_hand = result.gestures[0]
-    if first_hand is None or len(first_hand) == 0:
+    if not first_hand:
         return "None", 0.0
 
     top_category = first_hand[0]
     label = getattr(top_category, "category_name", None) or "None"
     score = float(getattr(top_category, "score", 0.0) or 0.0)
-
     return label, score
 
 
