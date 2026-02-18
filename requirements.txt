@@ -7,3 +7,4 @@ mediapipe==0.10.32
 # Image decoding
 pillow==12.1.1
 numpy==1.26.4
+psutil==5.9.4
