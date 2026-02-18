@@ -155,31 +155,44 @@ def recognizer_top_label(rgb_image):
     print("Step 1: creating mp.Image...", flush=True)
     rgb_image = np.ascontiguousarray(rgb_image)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-    print(f"Step 1 done: mp.Image created. elapsed={round(time.time()-t0,3)}s", flush=True)
+    print(f"Step 1 done. elapsed={round(time.time()-t0,3)}s", flush=True)
 
-    # Step 2: call recognize()
-    print("Step 2: calling recognizer.recognize()...", flush=True)
+    # Step 2: build a fresh recognizer with CPU delegate explicitly forced
+    print("Step 2: building fresh recognizer...", flush=True)
+    options = GestureRecognizerOptions(
+        base_options=BaseOptions(
+            model_asset_path=MODEL_PATH,
+            delegate=BaseOptions.Delegate.CPU   # force CPU, no GPU/OpenGL
+        ),
+        running_mode=VisionRunningMode.IMAGE,
+        num_hands=1,
+        min_hand_detection_confidence=MIN_HAND_DETECTION_CONF,
+        min_hand_presence_confidence=MIN_HAND_PRESENCE_CONF,
+        min_tracking_confidence=MIN_TRACKING_CONF,
+    )
+    local_recognizer = GestureRecognizer.create_from_options(options)
+    print(f"Step 2 done. elapsed={round(time.time()-t0,3)}s", flush=True)
+
+    # Step 3: call recognize()
+    print("Step 3: calling recognize()...", flush=True)
     t_recognize = time.time()
-    result = recognizer.recognize(mp_image)
-    print(f"Step 2 done: recognize() returned. elapsed_since_recognize={round(time.time()-t_recognize,3)}s, total_elapsed={round(time.time()-t0,3)}s", flush=True)
+    result = local_recognizer.recognize(mp_image)
+    local_recognizer.close()
+    print(f"Step 3 done. elapsed_since_recognize={round(time.time()-t_recognize,3)}s, total={round(time.time()-t0,3)}s", flush=True)
 
-    # Step 3: parse result
-    print("Step 3: parsing result...", flush=True)
+    # Step 4: parse result
+    print("Step 4: parsing result...", flush=True)
     if result is None or result.gestures is None or len(result.gestures) == 0:
-        print("Step 3: no gestures detected. returning None.", flush=True)
         return "None", 0.0
 
     first_hand = result.gestures[0]
     if not first_hand:
-        print("Step 3: first_hand is empty. returning None.", flush=True)
         return "None", 0.0
 
     top_category = first_hand[0]
     label = getattr(top_category, "category_name", None) or "None"
     score = float(getattr(top_category, "score", 0.0) or 0.0)
-    print(f"Step 3 done: label={label}, score={score}. total_elapsed={round(time.time()-t0,3)}s", flush=True)
-
-    print("=== recognizer_top_label END ===", flush=True)
+    print(f"Step 4 done: label={label}, score={score}. total={round(time.time()-t0,3)}s", flush=True)
     return label, score
 
 # ----------------------------
