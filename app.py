@@ -33,6 +33,8 @@ import mediapipe as mp
 from werkzeug.exceptions import HTTPException
 import concurrent.futures
 
+import psutil
+
 
 # ----------------------------
 # Configuration
@@ -170,9 +172,17 @@ def recognizer_top_label(rgb_image):
 # ----------------------------
 # Routes
 # ----------------------------
+
+
 @app.get("/healthz")
 def healthz():
-    return jsonify({"ok": True, "time": time.time()}), 200
+    mem = psutil.virtual_memory()
+    return jsonify({
+        "ok": True,
+        "time": time.time(),
+        "mem_used_mb": mem.used / 1024**2,
+        "mem_available_mb": mem.available / 1024**2,
+    }), 200
 
 
 @app.post("/predict")
