@@ -2,7 +2,7 @@ flask==3.0.3
 gunicorn==22.0.0
 
 # MediaPipe Gesture Recognizer
-mediapipe==0.10.32
+mediapipe==0.10.9
 
 # Image decoding
 pillow==12.1.1
