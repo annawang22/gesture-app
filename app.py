@@ -148,26 +148,39 @@ def downscale_rgb(rgb, max_dim=512):
 
 
 def recognizer_top_label(rgb_image):
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-    print("calling recognizer.recognize()", flush=True)
+    print("=== recognizer_top_label START ===", flush=True)
     t0 = time.time()
-    
-    result = recognizer.recognize(mp_image)  # Call directly, no thread pool
-    
-    print("recognize() seconds:", time.time() - t0, flush=True)
 
+    # Step 1: wrap in mp.Image
+    print("Step 1: creating mp.Image...", flush=True)
+    rgb_image = np.ascontiguousarray(rgb_image)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
+    print(f"Step 1 done: mp.Image created. elapsed={round(time.time()-t0,3)}s", flush=True)
+
+    # Step 2: call recognize()
+    print("Step 2: calling recognizer.recognize()...", flush=True)
+    t_recognize = time.time()
+    result = recognizer.recognize(mp_image)
+    print(f"Step 2 done: recognize() returned. elapsed_since_recognize={round(time.time()-t_recognize,3)}s, total_elapsed={round(time.time()-t0,3)}s", flush=True)
+
+    # Step 3: parse result
+    print("Step 3: parsing result...", flush=True)
     if result is None or result.gestures is None or len(result.gestures) == 0:
+        print("Step 3: no gestures detected. returning None.", flush=True)
         return "None", 0.0
 
     first_hand = result.gestures[0]
     if not first_hand:
+        print("Step 3: first_hand is empty. returning None.", flush=True)
         return "None", 0.0
 
     top_category = first_hand[0]
     label = getattr(top_category, "category_name", None) or "None"
     score = float(getattr(top_category, "score", 0.0) or 0.0)
-    return label, score
+    print(f"Step 3 done: label={label}, score={score}. total_elapsed={round(time.time()-t0,3)}s", flush=True)
 
+    print("=== recognizer_top_label END ===", flush=True)
+    return label, score
 
 # ----------------------------
 # Routes
