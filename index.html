@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gesture Recognizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: #222222;
+      --accent: #c8ff00;
+      --accent-dim: #8aad00;
+      --text: #f0f0f0;
+      --muted: #555;
+      --danger: #ff4444;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      overflow-x: hidden;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.4;
+    }
+
+    header {
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .logo {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .logo span { color: var(--text); }
+
+    .tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      animation: fadeUp 0.7s ease both 0.1s;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scaleX(-1); /* mirror */
+    }
+
+    canvas#snapshot {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .flash-overlay {
+      position: absolute;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.05s;
+    }
+
+    .flash-overlay.flash { opacity: 1; }
+
+    /* scanning line animation */
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      animation: none;
+      pointer-events: none;
+    }
+    .scan-line.active {
+      opacity: 1;
+      animation: scanDown 1.2s linear infinite;
+    }
+
+    @keyframes scanDown {
+      0%   { top: 0%; }
+      100% { top: 100%; }
+    }
+
+    .video-label {
+      position: absolute;
+      top: 12px; left: 12px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      background: rgba(0,0,0,0.6);
+      padding: 3px 8px;
+      border: 1px solid var(--accent);
+    }
+
+    .controls {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border: none;
+      cursor: pointer;
+      padding: 12px 24px;
+      transition: all 0.15s;
+      border-radius: 1px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #fff;
+      transform: translateY(-1px);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled {
+      background: var(--muted);
+      color: #333;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: var(--text);
+    }
+
+    /* URL bar */
+    .url-bar {
+      padding: 0 24px 24px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .url-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: #000;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      padding: 10px 14px;
+      outline: none;
+      border-radius: 1px;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    /* Result panel */
+    .result-panel {
+      margin-top: 24px;
+      width: 100%;
+      max-width: 720px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .result-inner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border-radius: 2px;
+    }
+
+    .result-header {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .result-label {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--accent);
+      line-height: 1;
+      word-break: break-all;
+      transition: all 0.3s ease;
+    }
+
+    .result-label.none { color: var(--muted); }
+    .result-label.error { color: var(--danger); }
+
+    .confidence-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .confidence-bar-bg {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .confidence-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .confidence-pct {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text);
+      min-width: 42px;
+      text-align: right;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .dot.ok { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .dot.loading { background: #ffaa00; animation: pulse 0.8s ease infinite; }
+    .dot.err { background: var(--danger); }
+
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Loading spinner */
+    .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .spinner.visible { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hint {
+      margin-top: 20px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.05em;
+      animation: fadeUp 0.8s ease both 0.3s;
+    }
+
+    /* No camera state */
+    .no-cam {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      text-align: center;
+    }
+    .no-cam-icon { font-size: 2rem; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">Gesture<span>Rec</span></div>
+    <div class="tag">MediaPipe · Flask · Render</div>
+  </header>
+
+  <!-- Main camera card -->
+  <div class="card">
+
+    <!-- URL input -->
+    <div class="url-bar" style="padding-top:20px;">
+      <span class="url-label">API URL</span>
+      <input type="text" id="apiUrl"
+        placeholder="https://your-app.onrender.com/predict"
+        value=""/>
+    </div>
+
+    <!-- Video feed -->
+    <div class="video-wrapper">
+      <div class="no-cam" id="noCam">
+        <div class="no-cam-icon">📷</div>
+        <div>Camera not started</div>
+        <div style="font-size:0.55rem;margin-top:4px;">Click "Start Camera" below</div>
+      </div>
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="snapshot"></canvas>
+      <div class="flash-overlay" id="flashOverlay"></div>
+      <div class="scan-line" id="scanLine"></div>
+      <div class="video-label" id="videoLabel">● LIVE</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn-secondary" id="startBtn" onclick="startCamera()">Start Camera</button>
+      <button class="btn btn-primary" id="captureBtn" onclick="capture()" disabled>
+        Capture &amp; Predict
+      </button>
+      <div class="spinner" id="spinner"></div>
+    </div>
+  </div>
+
+  <!-- Result panel -->
+  <div class="result-panel" id="resultPanel" style="display:none;">
+    <div class="result-inner">
+      <div class="result-header">— Prediction Result</div>
+      <div class="result-label" id="resultLabel">—</div>
+      <div class="confidence-row">
+        <div class="confidence-bar-bg">
+          <div class="confidence-bar-fill" id="confBar"></div>
+        </div>
+        <div class="confidence-pct" id="confPct">—</div>
+      </div>
+      <div class="status-row">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">Waiting for result...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint">Point your hand at the camera, then press Capture &amp; Predict</div>
+
+  <script>
+    const video       = document.getElementById('video');
+    const snapshot    = document.getElementById('snapshot');
+    const captureBtn  = document.getElementById('captureBtn');
+    const startBtn    = document.getElementById('startBtn');
+    const spinner     = document.getElementById('spinner');
+    const flashOverlay= document.getElementById('flashOverlay');
+    const scanLine    = document.getElementById('scanLine');
+    const videoLabel  = document.getElementById('videoLabel');
+    const noCam       = document.getElementById('noCam');
+    const resultPanel = document.getElementById('resultPanel');
+    const resultLabel = document.getElementById('resultLabel');
+    const confBar     = document.getElementById('confBar');
+    const confPct     = document.getElementById('confPct');
+    const statusDot   = document.getElementById('statusDot');
+    const statusText  = document.getElementById('statusText');
+    const apiUrlInput = document.getElementById('apiUrl');
+
+    let stream = null;
+
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        noCam.style.display = 'none';
+        video.style.display = 'block';
+        captureBtn.disabled = false;
+        startBtn.textContent = 'Restart Camera';
+        videoLabel.textContent = '● LIVE';
+      } catch(e) {
+        alert('Could not access webcam: ' + e.message);
+      }
+    }
+
+    function flashEffect() {
+      flashOverlay.classList.add('flash');
+      setTimeout(() => flashOverlay.classList.remove('flash'), 120);
+    }
+
+    function setLoading(on) {
+      captureBtn.disabled = on;
+      spinner.classList.toggle('visible', on);
+      scanLine.classList.toggle('active', on);
+      if (on) {
+        statusDot.className = 'dot loading';
+        statusText.textContent = 'Sending to server...';
+      }
+    }
+
+    function showResult(label, score, isError) {
+      resultPanel.style.display = 'block';
+      scanLine.classList.remove('active');
+
+      if (isError) {
+        resultLabel.textContent = 'Error';
+        resultLabel.className = 'result-label error';
+        confBar.style.width = '0%';
+        confPct.textContent = '—';
+        statusDot.className = 'dot err';
+        statusText.textContent = label; // error message
+        return;
+      }
+
+      const isNone = (!label || label === 'None');
+      resultLabel.textContent = isNone ? 'No Hand Detected' : label.replace(/_/g, ' ');
+      resultLabel.className   = 'result-label' + (isNone ? ' none' : '');
+
+      const pct = Math.round(score * 100);
+      confBar.style.width = pct + '%';
+      confPct.textContent  = isNone ? '—' : pct + '%';
+
+      statusDot.className  = 'dot ok';
+      statusText.textContent = isNone
+        ? 'No gesture detected — try positioning your hand more clearly'
+        : `Detected with ${pct}% confidence`;
+    }
+
+    async function capture() {
+      const url = apiUrlInput.value.trim();
+      if (!url) {
+        alert('Please enter your Render API URL above.');
+        return;
+      }
+      if (!stream) {
+        alert('Start the camera first.');
+        return;
+      }
+
+      // Draw current video frame to canvas
+      const ctx = snapshot.getContext('2d');
+      snapshot.width  = video.videoWidth;
+      snapshot.height = video.videoHeight;
+      // Mirror flip to match video display
+      ctx.translate(snapshot.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
+
+      flashEffect();
+      setLoading(true);
+      resultPanel.style.display = 'block';
+
+      // Convert canvas to blob
+      snapshot.toBlob(async (blob) => {
+        const formData = new FormData();
+        formData.append('image', blob, 'frame.jpg');
+
+        try {
+          const res  = await fetch(url, { method: 'POST', body: formData });
+          const data = await res.json();
+
+          if (!res.ok) {
+            showResult(data.error || `HTTP ${res.status}`, 0, true);
+          } else {
+            showResult(data.label, data.score, false);
+          }
+        } catch(e) {
+          showResult('Network error — is your Render URL correct and the server awake?', 0, true);
+        } finally {
+          setLoading(false);
+          captureBtn.disabled = false;
+        }
+      }, 'image/jpeg', 0.92);
+    }
+
+    // Allow Enter key to trigger capture
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !captureBtn.disabled) capture();
+    });
+  </script>
+</body>
+</html>
