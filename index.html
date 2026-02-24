@@ -197,6 +197,16 @@
       border-color: var(--text);
     }
 
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
     /* URL bar */
     .url-bar {
       padding: 0 24px 24px;
@@ -401,6 +411,7 @@
     <!-- Controls -->
     <div class="controls">
       <button class="btn btn-secondary" id="startBtn" onclick="startCamera()">Start Camera</button>
+      <button class="btn btn-danger" id="stopBtn" onclick="stopCamera()" disabled>Stop Camera</button>
       <button class="btn btn-primary" id="captureBtn" onclick="capture()" disabled>
         Capture &amp; Predict
       </button>
@@ -433,6 +444,7 @@
     const snapshot    = document.getElementById('snapshot');
     const captureBtn  = document.getElementById('captureBtn');
     const startBtn    = document.getElementById('startBtn');
+    const stopBtn     = document.getElementById('stopBtn');
     const spinner     = document.getElementById('spinner');
     const flashOverlay= document.getElementById('flashOverlay');
     const scanLine    = document.getElementById('scanLine');
@@ -456,10 +468,26 @@
         video.style.display = 'block';
         captureBtn.disabled = false;
         startBtn.textContent = 'Restart Camera';
+        stopBtn.disabled = false;
         videoLabel.textContent = '● LIVE';
       } catch(e) {
         alert('Could not access webcam: ' + e.message);
       }
+    }
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      video.srcObject = null;
+      noCam.style.display = 'flex';
+      noCam.innerHTML = '<div class="no-cam-icon">⏹</div><div>Camera stopped</div><div style="font-size:0.55rem;margin-top:4px;">Click "Start Camera" to restart</div>';
+      captureBtn.disabled = true;
+      stopBtn.disabled = true;
+      startBtn.textContent = 'Start Camera';
+      videoLabel.textContent = '○ OFF';
+      scanLine.classList.remove('active');
     }
 
     function flashEffect() {
