@@ -4,35 +4,24 @@ The majority of the code in this repository was generated with the assistance of
 I reviewed the generated code, integrated it into this project, tested it locally and on Render, and made edits as needed.
 """
 
+import os # allows me to work with operating system (e.g. folders, file paths)
+import time # for timestamps and measuring elapsed time
+import traceback # helps print detailed error info in exception handling
 
-"""
-Flask + MediaPipe Gesture Recognizer (IMAGE mode)
-
-Endpoints:
-  GET  /healthz   -> quick health check
-  POST /predict   -> multipart/form-data with file field "image"
-                    returns JSON with top gesture label + confidence
-
-Render tips:
-  - Use gunicorn start command (see below)
-  - Set env var MODEL_PATH if your model isn't in the repo root
-"""
-
-import os
-import time
-import traceback
-
+# image processing
 from PIL import Image
 import io
 import numpy as np
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify # for web server and JSON responses
 
-import mediapipe as mp
+import mediapipe as mp # for gesture recognition, see https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer/python
 
+# for better error handling in Flask routes
 from werkzeug.exceptions import HTTPException
 import concurrent.futures
 
+# for monitoring memory usage
 import psutil
 
 
@@ -42,10 +31,12 @@ import psutil
 MODEL_PATH = os.environ.get("MODEL_PATH", "gesture_recognizer.task")
 
 # Optional thresholds (tweak if you get "None" too often)
-MIN_HAND_DETECTION_CONF = float(os.environ.get("MIN_HAND_DETECTION_CONF", "0.5"))
-MIN_HAND_PRESENCE_CONF = float(os.environ.get("MIN_HAND_PRESENCE_CONF", "0.5"))
-MIN_TRACKING_CONF = float(os.environ.get("MIN_TRACKING_CONF", "0.5"))
+MIN_HAND_DETECTION_CONF = float(os.environ.get("MIN_HAND_DETECTION_CONF", "0.5")) # how confident it must be to say "I found a hand (initial detection)"
+MIN_HAND_PRESENCE_CONF = float(os.environ.get("MIN_HAND_PRESENCE_CONF", "0.5")) # how confident it must be to say "I still see the hand (after initial detection, for tracking)"
+MIN_TRACKING_CONF = float(os.environ.get("MIN_TRACKING_CONF", "0.5")) # how confident it must be to keep tracking the hand across frames (stability over time)
 
+
+# flask lets you create a web server and define routes (endpoints) that run Python functions when hit.
 app = Flask(__name__)
 
 @app.get("/")
@@ -57,11 +48,14 @@ def handle_any_exception(e):
     """
     Important: don't convert normal HTTP errors (like 404 Not Found) into 500s.
     Only return 500 JSON for real unexpected exceptions.
+    
+    400s - person/app making the request did something wrong (e.g. missing image field, invalid file)
+    500s - our server code had an error (e.g. model file missing, code bug, out of memory, etc)
     """
     if isinstance(e, HTTPException):
         return e  # keep 404/405/etc as-is
 
-    traceback.print_exc()
+    traceback.print_exc()# prints full error traceback
     return jsonify({"type": type(e).__name__, "error": str(e)}), 500
 
 
@@ -140,8 +134,6 @@ def downscale_rgb(rgb, max_dim=512):
     scale = max_dim / m
     new_w = int(w * scale)
     new_h = int(h * scale)
-    # Use OpenCV if you still have it, otherwise Pillow/numpy methods.
-    # If you're using Pillow decode already, easiest is:
     img = Image.fromarray(rgb)
     img = img.resize((new_w, new_h))
     return np.array(img)
@@ -151,7 +143,7 @@ def recognizer_top_label(rgb_image):
     print("=== recognizer_top_label START ===", flush=True)
     t0 = time.time()
 
-    # Step 1: wrap in mp.Image
+    # Step 1: wrap in mp.Image because MediaPip can't work with raw NumPy arrays
     print("Step 1: creating mp.Image...", flush=True)
     rgb_image = np.ascontiguousarray(rgb_image)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
@@ -162,7 +154,7 @@ def recognizer_top_label(rgb_image):
     options = GestureRecognizerOptions(
         base_options=BaseOptions(
             model_asset_path=MODEL_PATH,
-            delegate=BaseOptions.Delegate.CPU   # force CPU, no GPU/OpenGL
+            delegate=BaseOptions.Delegate.CPU   # force CPU, no GPU/OpenGL because of Render's environment limitations (they have no screen, no display, no graphics stack)
         ),
         running_mode=VisionRunningMode.IMAGE,
         num_hands=1,
