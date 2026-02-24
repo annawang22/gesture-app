@@ -533,6 +533,15 @@
         : `Detected with ${pct}% confidence`;
     }
 
+    function handleGesture(label) {
+      switch (label) {
+        case 'Pointing_Up': console.log('Action: NEXT'); break;
+        case 'Closed_Fist': console.log('Action: PAUSE'); break;
+        case 'Open_Palm':   console.log('Action: PLAY'); break;
+        default:            console.log('Unknown gesture:', label);
+      }
+    }
+
     async function capture() {
       const url = apiUrlInput.value.trim();
       if (!url) {
@@ -563,12 +572,13 @@
         formData.append('image', blob, 'frame.jpg');
 
         try {
-          const res  = await fetch(url, { method: 'POST', body: formData });
-          const data = await res.json();
+          const res  = await fetch(url, { method: 'POST', body: formData }); // sends to Flask backend and waits for response
+          const data = await res.json(); // .json() converts (parses) raw text response into a JavaScript object
 
           if (!res.ok) {
             showResult(data.error || `HTTP ${res.status}`, 0, true);
           } else {
+            handleGesture(data.label);
             showResult(data.label, data.score, false);
           }
         } catch(e) {
