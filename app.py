@@ -41,6 +41,8 @@ MIN_TRACKING_CONF = float(os.environ.get("MIN_TRACKING_CONF", "0.5")) # how conf
 # flask lets you create a web server and define routes (endpoints) that run Python functions when hit.
 app = Flask(__name__)
 
+CORS(app) # allow cross-origin requests to all routes
+
 @app.get("/")
 def home():
     return "OK", 200
