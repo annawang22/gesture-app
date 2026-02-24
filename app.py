@@ -24,6 +24,8 @@ import concurrent.futures
 # for monitoring memory usage
 import psutil
 
+from flask_cors import CORS # to allow cross-origin requests (e.g. if frontend is on a different domain/port)
+
 
 # ----------------------------
 # Configuration
