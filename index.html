@@ -375,6 +375,9 @@
     }
     .no-cam-icon { font-size: 2rem; margin-bottom: 4px; }
   </style>
+
+  <script src="spotify_config.js"></script>
+
 </head>
 <body>
 
@@ -417,6 +420,14 @@
       </button>
       <div class="spinner" id="spinner"></div>
     </div>
+  </div>
+
+  <!--spotify login button-->
+  <div style="padding: 16px 24px 16px;">
+    <button class="btn btn-secondary" id="spotifyBtn" onclick="loginToSpotify()">
+      Connect Spotify
+    </button>
+    <span id="spotifyStatus" style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--muted);margin-left:12px;">Not connected</span>
   </div>
 
   <!-- Result panel -->
@@ -594,6 +605,53 @@
     document.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !captureBtn.disabled) capture();
     });
+
+    // --- Spotify Auth ---
+    const SCOPES = 'user-modify-playback-state user-read-playback-state';
+    let spotifyToken = null;
+
+    function loginToSpotify() {
+      const url = 'https://accounts.spotify.com/authorize'
+        + '?client_id=' + SPOTIFY_CLIENT_ID
+        + '&response_type=token'
+        + '&redirect_uri=' + encodeURIComponent(SPOTIFY_REDIRECT_URI)
+        + '&scope=' + encodeURIComponent(SCOPES);
+      window.location.href = url;
+    }
+
+    // After Spotify redirects back, grab the token from the URL
+    function handleSpotifyCallback() {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      if (params.has('access_token')) {
+        spotifyToken = params.get('access_token');
+        window.location.hash = ''; // clean up URL
+        document.getElementById('spotifyStatus').textContent = 'Connected ✓';
+        document.getElementById('spotifyStatus').style.color = 'var(--accent)';
+        document.getElementById('spotifyBtn').textContent = 'Reconnect Spotify';
+      }
+    }
+    handleSpotifyCallback(); // runs on page load to catch the redirect
+
+    // --- Spotify Controls ---
+    async function spotifyCommand(endpoint, method = 'POST') {
+      if (!spotifyToken) {
+        alert('Connect Spotify first.');
+        return;
+      }
+      await fetch('https://api.spotify.com/v1/me/player/' + endpoint, {
+        method,
+        headers: { 'Authorization': 'Bearer ' + spotifyToken }
+      });
+    }
+
+    // --- Gesture Handler ---
+    function gestureHandler(label) {
+      if (label === 'Pointing_Up')  spotifyCommand('next');
+      if (label === 'Closed_Fist')  spotifyCommand('pause');
+      if (label === 'Open_Palm')    spotifyCommand('play');
+    }
+
   </script>
 </body>
 </html>
