@@ -394,7 +394,7 @@
       <span class="url-label">API URL</span>
       <input type="text" id="apiUrl"
         placeholder="https://your-app.onrender.com/predict"
-        value=""/>
+        value="https://gesture-app-restart.onrender.com/predict"/>
     </div>
 
     <!-- Video feed -->
@@ -542,6 +542,8 @@
       statusText.textContent = isNone
         ? 'No gesture detected — try positioning your hand more clearly'
         : `Detected with ${pct}% confidence`;
+
+      if (!isNone) gestureHandler(label);
     }
 
     function handleGesture(label) {
@@ -682,17 +684,18 @@
         alert('Connect Spotify first.');
         return;
       }
-      await fetch('https://api.spotify.com/v1/me/player/' + endpoint, {
+      const res = await fetch('https://api.spotify.com/v1/me/player/' + endpoint, {
         method,
         headers: { 'Authorization': 'Bearer ' + spotifyToken }
       });
+      console.log('Spotify response:', res.status, endpoint);
     }
 
     // --- Gesture Handler ---
     function gestureHandler(label) {
-      if (label === 'Pointing_Up')  spotifyCommand('next');
-      if (label === 'Closed_Fist')  spotifyCommand('pause');
-      if (label === 'Open_Palm')    spotifyCommand('play');
+      if (label === 'Pointing_Up')  spotifyCommand('next', 'POST');
+      if (label === 'Closed_Fist')  spotifyCommand('pause', 'PUT');
+      if (label === 'Open_Palm')    spotifyCommand('play', 'PUT');
     }
 
   </script>
