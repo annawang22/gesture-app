@@ -1,10 +1,4 @@
 """
-Attribution / Use of AI Tools:
-The majority of the code in this repository was generated with the assistance of ChatGPT Pro (Feb. 2026).  
-I reviewed the generated code, integrated it into this project, tested it locally and on Render, and made edits as needed.
-"""
-
-"""
 Webcam client:
 - Shows live camera feed
 - Press 'c' to capture a frame and send to your /predict endpoint

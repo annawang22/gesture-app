@@ -1,8 +1,3 @@
-"""
-Attribution / Use of AI Tools:
-The majority of the code in this repository was generated with the assistance of ChatGPT Pro (Feb. 2026).  
-I reviewed the generated code, integrated it into this project, tested it locally and on Render, and made edits as needed.
-"""
 
 import os # allows me to work with operating system (e.g. folders, file paths)
 import time # for timestamps and measuring elapsed time

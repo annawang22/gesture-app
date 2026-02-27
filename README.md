@@ -27,7 +27,7 @@ This app lets you control Spotify using hand gestures detected by your webcam. Y
 5. Hold up a hand gesture and click **Capture & Predict**
 6. The detected gesture label and confidence score will appear, and your music will respond
 
-> **Note:** The app is in Spotify's Development Mode. If you are not the app owner, you need to be added as a user in the Spotify Developer Dashboard before you can connect. Contact the app owner to be added.
+> **Note:** The app is in Spotify's Development Mode. Unfortunately, if you are not the app owner, you need to be added as a user in the Spotify Developer Dashboard before you can connect. Contact the app owner through this [Google Form](https://forms.gle/Qz86m32RgHH5DZ1o6) to be added.
 
 ---
 
@@ -37,7 +37,7 @@ This app lets you control Spotify using hand gestures detected by your webcam. Y
 
 **Spotify PKCE authentication** — The app uses Spotify's modern PKCE authorization flow, which is designed for frontend applications and works without a client secret. I learned how OAuth redirects work, debugged multiple authentication errors (invalid redirect URIs, deprecated response types), and got the login flow working end to end.
 
-**UI/UX Design** — From the design to buttons to the scanning feature while taking a picture and the automatic illustration of hand gesture labeling, I'm really proud of.
+**UI/UX Design** — I'm really proud of how the interface came out, from the overall dark theme and color choices down to the smaller details like the animated scan line during capture, the flash effect, and the way gesture results are displayed with a confidence bar and color-coded status indicator.
 
 ---
 
@@ -73,7 +73,7 @@ Then visit `http://127.0.0.1:8888` in your browser.
 
 ## How Secrets Are Handled
 
-This app uses Spotify's **PKCE Authorization Flow**, which is designed for frontend applications and does not require a client secret. The only credential stored in the codebase is the **Spotify Client ID**, which is intentionally public — it is visible in the browser's Network tab during any login flow and poses no security risk on its own.
+This project uses Spotify's **PKCE Authorization Flow**, which is designed for frontend applications and does not require a client secret. The only credential stored in the codebase is the **Spotify Client ID**, which is intentionally public — it is visible in the browser's Network tab during any login flow and poses no security risk on its own.
 
 ---
 
@@ -103,6 +103,6 @@ gesture-app/
 
 ## Attribution
 
-The majority of the code in this repository was generated with the assistance of ChatGPT Pro and Claude (Feb. 2026). Code was reviewed, integrated, tested locally and on Render, and edited as needed.
+Parts of the code in this repository was generated with the assistance of ChatGPT Pro and Claude (Feb. 2026). Code was reviewed, integrated, tested locally and on Render, and edited as needed.
 
 The gesture recognition model (`gesture_recognizer.task`) is provided by Google via the [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer) library.
