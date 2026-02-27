@@ -1,4 +1,4 @@
-# Gesture-Controlled Spotify App
+# Gesture-Controlled Spotify Web App
 
 Control Spotify playback using hand gestures captured through your webcam — no keyboard required.
 
