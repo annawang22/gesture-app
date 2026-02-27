@@ -1,201 +1,108 @@
-# Gesture Recognizer API (Flask + MediaPipe)
+# Gesture-Controlled Spotify App
 
-This project is a simple **Flask backend** that runs the **MediaPipe Gesture Recognizer** on an uploaded image and returns the top gesture label + confidence. A small **webcam client script** (`capture_and_send.py`) acts as a “frontend” by capturing frames and calling the backend.
+Control Spotify playback using hand gestures captured through your webcam — no keyboard required.
 
----
-
-## 1) Backend: what it does
-
-### Overview
-The backend (`app.py`) loads a MediaPipe **Gesture Recognizer** model (`gesture_recognizer.task`) and exposes HTTP endpoints for:
-- health checks
-- version info
-- gesture prediction from an uploaded image
-
-### Endpoints
-
-#### `GET /`
-**Purpose:** Basic “server is up” check (also prevents noisy 404s from probes).  
-**Parameters:** none  
-**Returns:** plain text
-- `200 OK` with body: `OK`
+🔗 **Live site:** [https://annawang22.github.io/gesture-app/](https://annawang22.github.io/gesture-app/)
 
 ---
 
-#### `GET /healthz`
-**Purpose:** Health check used for debugging and monitoring.  
-**Parameters:** none  
-**Returns:** JSON
-- `200 OK`
-```json
-{"ok": true, "time": 1234567890.123}
-```
+## What It Does
+
+This app lets you control Spotify using hand gestures detected by your webcam. You open the site in your browser, connect your Spotify account, start your camera, and hold up a hand gesture. The app captures a frame, sends it to a Flask backend running on Render, which uses Google's MediaPipe to identify the gesture and return a label. The frontend then calls the Spotify API to carry out the corresponding action.
+
+| Gesture | Action |
+|---|---|
+| ☝️ Pointing finger up | Skip to next track |
+| ✊ Closed fist | Pause |
+| 🖐 Open palm | Play / Resume |
 
 ---
 
-#### `GET /version`
-**Purpose:** Confirms which commit/build is currently deployed and which Python version is running.  
-**Parameters:** none  
-**Returns:** JSON
-- `200 OK`
-```json
-{
-  "commit_hint": "v1-debug-2026-02-16-1334",
-  "python": "3.12.12 (....)"
-}
-```
+## How to Use It
+
+1. Visit the [live site](https://annawang22.github.io/gesture-app/)
+2. Click **Connect Spotify** and log in with your Spotify account
+3. Make sure Spotify is actively playing on one of your devices
+4. Click **Start Camera** and allow webcam access
+5. Hold up a hand gesture and click **Capture & Predict**
+6. The detected gesture label and confidence score will appear, and your music will respond
+
+> **Note:** The app is in Spotify's Development Mode. If you are not the app owner, you need to be added as a user in the Spotify Developer Dashboard before you can connect. Contact the app owner to be added.
 
 ---
 
-#### `POST /predict`
-**Purpose:** Run gesture recognition on an uploaded image.  
-**Request type:** `multipart/form-data`  
-**Required field:**  
-- `image` = the uploaded file (JPEG/PNG/etc.)
+## Features I'm Most Proud Of
 
-**Returns (success):** JSON
-- `200 OK`
-```json
-{"label": "Thumb_Up", "score": 0.87}
-```
+**End-to-end gesture-to-music pipeline** — Intertwining the browser webcam frontend, a Flask REST API backend hosted on Render, a MediaPipe machine learning model, and the Spotify Web API to work seamlessly
 
-**Returns (client error):**
-- `400 Bad Request` if the `image` field is missing or empty:
-```json
-{"error": "Missing file field 'image'. Send multipart/form-data with image=@file.jpg"}
-```
+**Spotify PKCE authentication** — The app uses Spotify's modern PKCE authorization flow, which is designed for frontend applications and works without a client secret. I learned how OAuth redirects work, debugged multiple authentication errors (invalid redirect URIs, deprecated response types), and got the login flow working end to end.
 
-**Returns (server error):**
-- `500 Internal Server Error` with a JSON error message and traceback:
-```json
-{"error": "...", "traceback": "..."}
-```
-
-**Notes about backend behavior**
-- Images are decoded with **Pillow**, converted to **RGB**, and then **downscaled (max_dim=256)** before inference to reduce memory/time.
-- The returned label is the top gesture category from MediaPipe (if nothing is detected, your code may return `"None"` / `0.0` depending on your classifier logic).
+**UI/UX Design** — From the design to buttons to the scanning feature while taking a picture and the automatic illustration of hand gesture labeling, I'm really proud of.
 
 ---
 
-## 2) “Frontend” (client) and how it talks to the backend
-
-There is no browser UI in this project. Instead, `capture_and_send.py` acts as a lightweight client (“frontend”) that:
-
-1. Opens your webcam using OpenCV (`cv2.VideoCapture(0)`).
-2. Displays a live camera window.
-3. When you press:
-   - **`c`**: captures the current frame, writes it as a temporary `.jpg`, and sends:
-     - `POST {URL}/predict`
-     - as `multipart/form-data` with `image=@frame.jpg`
-   - **`q`**: quits the program
-4. Prints the backend response (`label` + `score`) to the terminal.
-
-### Which endpoint it calls
-- Calls: `POST /predict`
-- Sends: `files = {"image": ("frame.jpg", <bytes>, "image/jpeg")}`
-- Uses: `requests.post(..., timeout=90)`
-- Displays: status code + response text
-
----
-
-## 3) Setup and run the backend locally
+## How to Run It Locally
 
 ### Requirements
-- Python (your setup commonly uses a `.venv`)
-- A MediaPipe task model file:
-  - `gesture_recognizer.task` (default expected in the repo root)
+- Python 3.9+
+- A Spotify Premium account
+- A Spotify Developer app with `http://127.0.0.1:8888/callback` added as a Redirect URI
 
-### Install dependencies
-From the project folder:
+### Backend
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+git clone https://github.com/annawang22/gesture-app.git
+cd gesture-app
 pip install -r requirements.txt
-```
-
-### Environment variables (optional)
-The backend supports these env vars:
-
-- `MODEL_PATH`  
-  Path to the `.task` model file.  
-  Default: `gesture_recognizer.task`
-
-- Optional confidence thresholds:
-  - `MIN_HAND_DETECTION_CONF` (default `0.5`)
-  - `MIN_HAND_PRESENCE_CONF` (default `0.5`)
-  - `MIN_TRACKING_CONF` (default `0.5`)
-
-Example:
-```bash
-export MODEL_PATH="gesture_recognizer.task"
-export MIN_HAND_DETECTION_CONF="0.6"
-```
-
-### Run the backend
-```bash
-source .venv/bin/activate
 python3 app.py
 ```
 
-Expected output includes something like:
-- `Running on http://127.0.0.1:5000`
+The backend runs at `http://localhost:5000`.
 
-### Test endpoints locally
+### Frontend
 
-Health:
 ```bash
-curl -i http://127.0.0.1:5000/healthz
+python3 server.py
 ```
 
-Predict with an image:
-```bash
-curl -i -X POST "http://127.0.0.1:5000/predict" -F "image=@/FULL/PATH/TO/image.jpg"
+Then visit `http://127.0.0.1:8888` in your browser.
+
+> The frontend must be served over HTTP (not opened as a file) for the Spotify auth redirect to work. `server.py` handles this and also intercepts the Spotify callback redirect correctly.
+
+---
+
+## How Secrets Are Handled
+
+This app uses Spotify's **PKCE Authorization Flow**, which is designed for frontend applications and does not require a client secret. The only credential stored in the codebase is the **Spotify Client ID**, which is intentionally public — it is visible in the browser's Network tab during any login flow and poses no security risk on its own.
+
+---
+
+## Project Structure
+
+```
+gesture-app/
+├── app.py                   # Flask backend — gesture recognition API
+├── capture_and_send.py      # Legacy CLI client (replaced by index.html)
+├── index.html               # Browser frontend — webcam + Spotify integration
+├── server.py                # Local dev server with Spotify callback handling
+├── spotify_config.js        # Spotify Client ID and Redirect URI
+├── gesture_recognizer.task  # Pre-trained MediaPipe gesture model
+├── requirements.txt         # Python dependencies
+└── .gitignore
 ```
 
 ---
 
-## 4) Run the webcam client (“frontend”) locally
+## Tech Stack
 
-In a **second terminal** (leave the backend running in the first terminal):
-
-```bash
-source .venv/bin/activate
-python3 capture_and_send.py --url http://127.0.0.1:5000/predict
-```
-
-- Press **`c`** to capture and send a frame
-- Press **`q`** to quit
-
-> macOS note: you may need to allow Camera access for Terminal/Python in **System Settings → Privacy & Security → Camera**.
+- **Backend:** Python, Flask, MediaPipe, Pillow, NumPy, psutil, flask-cors, Gunicorn
+- **Frontend:** HTML, CSS, Vanilla JavaScript, Spotify Web API, PKCE Auth Flow
+- **Hosting:** Render (backend), GitHub Pages (frontend)
 
 ---
 
-## 5) Deploying on Render (backend hosting)
+## Attribution
 
-Render runs the backend using `gunicorn`. A working Start Command is:
+The majority of the code in this repository was generated with the assistance of ChatGPT Pro and Claude (Feb. 2026). Code was reviewed, integrated, tested locally and on Render, and edited as needed.
 
-```bash
-gunicorn app:app --bind 0.0.0.0:$PORT --worker-class gthread --workers 1 --threads 4 --timeout 600 --graceful-timeout 600 --access-logfile - --error-logfile -
-```
-
-Once deployed, you can test:
-
-```bash
-curl -i https://YOUR-SERVICE.onrender.com/healthz
-curl -i -X POST "https://YOUR-SERVICE.onrender.com/predict" -F "image=@/FULL/PATH/TO/image.jpg"
-```
-
----
-
-## 6) Authentication / secrets handling
-
-This project does **not** use authentication (no API keys, tokens, or user accounts).  
-There are **no secrets stored in the client script**.
-
----
-
-## Attribution / Use of AI Tools
-The majority of the code in this repository was generated with the assistance of ChatGPT Pro (Feb. 2026).  
-I reviewed the generated code, integrated it into this project, tested it locally and on Render, and made edits as needed.
-
+The gesture recognition model (`gesture_recognizer.task`) is provided by Google via the [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer) library.

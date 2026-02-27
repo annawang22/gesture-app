@@ -1,0 +1,34 @@
+AI Models Used: ChatGPT Pro (Feb. 2026), Claude (Feb. 2026)
+
+Key Prompts:
+
+Claude Prompts
+----------------
+Debugging no GPU on Render issue:
+when i run this command "curl --max-time 600 -i -X POST "https://gesture-app-restart.onrender.com/predict" -F "image=@/Users/hfang2/Downloads/thumbsup.jpg"",  i get stuck in the recognizer_top_label function. can you please help me debug this?
+
+what does this error in render mean "Running 'gunicorn app:app --bind 0.0.0.0:$PORT --worker-class gthread --workers 1 --threads 4 --timeout 600 --graceful-timeout 600 --access-logfile - --error-logfile -'"
+
+when i run the code locally it works, but it doesn't work with render, what do i do?
+
+can you edit recognize_top_label to see if the function is timing out?
+
+this is what my error log looks like: Step 1: creating mp.Image...
+Step 1 done: mp.Image created. elapsed=0.001s
+Step 2: calling recognizer.recognize()...
+==> Detected service running on port 10000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+
+----------------
+i downloaded python3 -m pip install psutil on my local computer, however, it's not importing into vscode. it gives me a squiggly line underneath psutil and when i run my code, "ModuleNotFoundError: No module named 'psutil'". Could you provide me a solution to this?
+
+could you generate me a frontend to this current backend project that is on the web/browser? can you specify whether i would need to create a new github repository or not? be clear on what i should see when i run the code?  i want a simple frontend to begin with.
+    Q: How do you want to capture the image in the browser?
+    A: Live webcam feed with a capture button
+
+    Q: Where is your backend currently running?
+    A: On Render (live URL)
+
+why is errors in the 500s more serious than those in the 400s?
+
+explain this in more detail. why do we need a fresh recognizer per request? and why does the GPU vs CPU concept matter?
